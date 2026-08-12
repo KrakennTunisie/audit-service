@@ -16,6 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,7 +55,7 @@ public class AuditLogRepositoryAdapter implements AuditLogRepositoryPort {
     }
 
     @Override
-    public Page<AuditLogView> search(String resourceType, String resourceId, String keyword, String status, int page) {
+    public Page<AuditLogView> search(String resourceType, String resourceId, String keyword, String status, LocalDate date, int page) {
         Pageable pageable = PageRequest.of(
                 Math.max(page - 1, 0),
                 5
@@ -63,16 +66,41 @@ public class AuditLogRepositoryAdapter implements AuditLogRepositoryPort {
         if (status != null && !status.isBlank()) {
             outcome = AuditOutcome.valueOf(status.toUpperCase());
         }
+        Page<AuditLogEntity> logs;
 
-        return auditLogRepository
-                .search(
-                        resourceType,
-                        resourceId,
-                        keyword,
-                        outcome,
-                        pageable
-                )
-                .map(auditLogMapper::toView);
+        if (date != null) {
+
+            Instant startOfDay = date
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant();
+
+            Instant startOfNextDay = date
+                    .plusDays(1)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant();
+
+            logs = auditLogRepository.searchByDate(
+                    resourceType,
+                    resourceId,
+                    keyword,
+                    outcome,
+                    startOfDay,
+                    startOfNextDay,
+                    pageable
+            );
+
+        } else {
+
+            logs = auditLogRepository.search(
+                    resourceType,
+                    resourceId,
+                    keyword,
+                    outcome,
+                    pageable
+            );
+        }
+
+        return logs.map(auditLogMapper::toView);
     }
 
     @Override

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -23,8 +24,8 @@ public class AuditLogService implements QueryAuditLogsUseCase, RecordAuditLogUse
     private final AuditLogMapper auditLogMapper;
 
     @Override
-    public Page<AuditLogView> search(String resourceType, String resourceId, String keyword, String status, int page) {
-        return auditLogRepositoryPort.search(resourceType, resourceId, keyword, status, page);
+    public Page<AuditLogView> search(String resourceType, String resourceId, String keyword, String status, LocalDate date, int page) {
+        return auditLogRepositoryPort.search(resourceType, resourceId, keyword, status, date, page);
     }
 
     @Override

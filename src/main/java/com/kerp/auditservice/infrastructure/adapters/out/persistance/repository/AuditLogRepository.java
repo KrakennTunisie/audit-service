@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,24 +24,50 @@ public interface AuditLogRepository extends JpaRepository<AuditLogEntity, UUID> 
     Optional<AuditLog> findByEventId(UUID eventId);
 
     @Query("""
-        SELECT a
-        FROM AuditLogEntity a
-        WHERE (:resourceType IS NULL OR a.resourceType = :resourceType)
-          AND (:resourceId IS NULL OR a.resourceId = :resourceId)
-          AND (:status IS NULL OR a.outcome = :status)
-          AND (
-                :keyword IS NULL OR :keyword = ''
-                OR LOWER(a.action) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(a.actorFirstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(a.actorLastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-              )
-        ORDER BY a.timestamp DESC
-        """)
+    SELECT a
+    FROM AuditLogEntity a
+    WHERE (:resourceType IS NULL OR a.resourceType = :resourceType)
+      AND (:resourceId IS NULL OR a.resourceId = :resourceId)
+      AND (:status IS NULL OR a.outcome = :status)
+      AND (
+            :keyword IS NULL OR :keyword = ''
+            OR LOWER(a.action) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(a.actorFirstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(a.actorLastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+    ORDER BY a.timestamp DESC
+    """)
     Page<AuditLogEntity> search(
             @Param("resourceType") String resourceType,
             @Param("resourceId") String resourceId,
             @Param("keyword") String keyword,
             @Param("status") AuditOutcome status,
+            Pageable pageable
+    );
+
+    @Query("""
+SELECT a
+FROM AuditLogEntity a
+WHERE (:resourceType IS NULL OR a.resourceType = :resourceType)
+  AND (:resourceId IS NULL OR a.resourceId = :resourceId)
+  AND (:status IS NULL OR a.outcome = :status)
+  AND a.timestamp >= :startOfDay
+  AND a.timestamp < :startOfNextDay
+  AND (
+        :keyword IS NULL OR :keyword = ''
+        OR LOWER(a.action) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(a.actorFirstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(a.actorLastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+      )
+ORDER BY a.timestamp DESC
+""")
+    Page<AuditLogEntity> searchByDate(
+            @Param("resourceType") String resourceType,
+            @Param("resourceId") String resourceId,
+            @Param("keyword") String keyword,
+            @Param("status") AuditOutcome status,
+            @Param("startOfDay") Instant startOfDay,
+            @Param("startOfNextDay") Instant startOfNextDay,
             Pageable pageable
     );
 
