@@ -1,0 +1,41 @@
+services:
+  audit-service:
+    build:
+      context: .
+    container_name: audit-server
+    ports:
+      - "8087:8087"
+    depends_on:
+      audit-db:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - ms-net
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+  audit-db:
+    image: postgres:18
+    container_name: audit-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: audit_service_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - audit_db_data:/var/lib/postgresql
+    networks:
+      - ms-net
+
+volumes:
+  audit_db_data:
+
+networks:
+  ms-net:
+    external: true
